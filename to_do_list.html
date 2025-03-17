@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My To-Do List</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="header">
+        <h1>My To-Do List</h1>
+    </div>
+
+
+    <div class="container">
+        <div class="listDiv">
+            <input id="taskInput" type="text" placeholder="Enter your task" required>
+           
+            <button id="btn1">Add to List</button>
+            <p id="error-msg" class="error"></p>    <!-- Error message will appear here -->
+
+            <div class="filters">
+                <button class="filter-btn" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="active">Active</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+            </div>
+
+            <ul id="list"></ul>
+        </div>
+    </div>
+
+
+    <div id="footer">
+        <p>Copyright &copy; <span id="year"></span> Al Amin &reg;</p>
+    </div>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function(){
+            let list = document.getElementById("list");
+            let inputField = document.getElementById("taskInput");
+            let addButton = document.getElementById("btn1");
+            let filterButtons = document.querySelectorAll(".filter-btn");
+
+            let currentFilter = "all"; // Default filter
+
+            // function to save list to local storage
+            function saveList(){
+                let tasks = [];
+                document.querySelectorAll("#list li").forEach(li => {
+                    tasks.push({
+                        text: li.querySelector("span").textContent,
+                        completed: li.querySelector("input[type='checkbox']").checked
+                    });
+                });
+                
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                console.log(tasks)
+            }
+
+            // function to load list from local storage
+            function loadList(){
+                let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+                tasks.forEach(task => addTask(task.text, task.completed));
+            }
+
+            // function to add a task to the list
+            function addTask(text, completed = false){
+                let li = document.createElement("li");   // creating a list item for parent list
+
+                // creating checkbox
+                let checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = completed
+                checkbox.style.marginRight = "5px";
+
+                // create text span
+                // text span is being used for line-through the text only not the button.
+                let textSpan = document.createElement("span"); // Wrap task text
+                textSpan.textContent = text
+                if(completed) textSpan.style.textDecoration = "line-through"; // apply strikethrough if completed
+
+
+                checkbox.onchange = function(){
+                    if(checkbox.checked){
+                        textSpan.style.textDecoration = "line-through";
+                        saveList(); // save list after change
+                        applyFilter(); // Reapply filter after change
+                    } else{
+                        textSpan.style.textDecoration = "none";
+                        saveList(); // save list after change
+                        applyFilter(); // Reapply filter after change
+                    }
+                }
+
+                // create delete Button
+                let deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "❌";
+                deleteBtn.onclick = function(){
+                    li.remove();
+                    saveList(); // save list after deletion
+                    applyFilter(); // Reapply filter after change
+                }
+
+                // append elements
+                li.appendChild(checkbox);
+                li.appendChild(textSpan);
+                li.appendChild(deleteBtn);
+                list.appendChild(li);
+
+                saveList();
+
+            }
+
+            function applyFilter(){
+                list.innerHTML = "";  // Clear existing list before applying the filter
+
+                let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+                let filteredTasks = tasks;
+
+                if (currentFilter === "active") {
+                    filteredTasks = tasks.filter(task => !task.completed);
+                } else if (currentFilter === "completed") {
+                    filteredTasks = tasks.filter(task => task.completed);
+                }
+
+                filteredTasks.forEach(task => addTask(task.text, task.completed, false));  // Add only filtered tasks
+            }
+
+
+            addButton.onclick = function(){
+                let inputValue = inputField.value.trim();    // get input value and trim whitespaces
+                let errorMsg = document.getElementById("error-msg");    // error message if the input field is empty
+                if(inputValue !== ""){
+                    addTask(inputValue);
+                    saveList(); // save new task to local storage
+                    inputField.value = "";  // clear the input field
+                    errorMsg.textContent = ""; // Clear error message
+                } else {
+                    errorMsg.textContent = "Task cannot be empty!";
+                }
+
+                // Set timeout to clear the error message after 2 seconds
+                setTimeout(() => {
+                    errorMsg.textContent = "";
+                }, 2000);
+            }
+
+            // Filter Button Click Event
+            filterButtons.forEach(button => {
+                button.addEventListener("click", function() {
+                    currentFilter = this.dataset.filter;
+                    applyFilter();
+                });
+            });
+
+            loadList();
+
+        });
+
+        document.getElementById("year").textContent = new Date().getFullYear();
+
+    </script>
+</body>
+</html>
